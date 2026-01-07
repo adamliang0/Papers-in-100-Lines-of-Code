@@ -13,8 +13,10 @@ class MLP(nn.Module):
         super(MLP, self).__init__()
 
         self.network = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim), nn.Tanh(),
-            nn.Linear(hidden_dim, hidden_dim), nn.Tanh(),
+            nn.Linear(input_dim, hidden_dim),
+            nn.Tanh(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.Tanh(),
             nn.Linear(hidden_dim, output_dim),
         )
 
@@ -22,9 +24,15 @@ class MLP(nn.Module):
         return self.network(noise)
 
 
-def reptile(model, nb_iterations: int, sample_task: Callable, perform_k_training_steps: Callable, k=1, epsilon=0.1):
+def reptile(
+    model,
+    nb_iterations: int,
+    sample_task: Callable,
+    perform_k_training_steps: Callable,
+    k=1,
+    epsilon=0.1,
+):
     for _ in tqdm(range(nb_iterations)):
-
         task = sample_task()
         phi_tilde = perform_k_training_steps(copy.deepcopy(model), task, k)
 
@@ -36,7 +44,7 @@ def reptile(model, nb_iterations: int, sample_task: Callable, perform_k_training
 
 @torch.no_grad()
 def sample_task():
-    a = torch.rand(1).item() * 4.9 + .1  # Sample a in [0.1, 5.0]
+    a = torch.rand(1).item() * 4.9 + 0.1  # Sample a in [0.1, 5.0]
     b = torch.rand(1).item() * 2 * np.pi  # Sample b in [0, 2pi]
 
     x = torch.linspace(-5, 5, 50)
@@ -80,8 +88,8 @@ if __name__ == "__main__":
     perform_k_training_steps(model, new_task, 32)
     y_pred_after = model(x)
 
-    plt.plot(x.numpy(), y_pred_before.numpy(), label='Before')
-    plt.plot(x.numpy(), y_pred_after.data.numpy(), label='After')
-    plt.plot(true_x.numpy(), true_y.numpy(), label='True')
+    plt.plot(x.numpy(), y_pred_before.numpy(), label="Before")
+    plt.plot(x.numpy(), y_pred_after.data.numpy(), label="After")
+    plt.plot(true_x.numpy(), true_y.numpy(), label="True")
     plt.legend(fontsize=11)
-    plt.savefig('Imgs/Demonstration_of_reptile.png')
+    plt.savefig("Imgs/Demonstration_of_reptile.png")

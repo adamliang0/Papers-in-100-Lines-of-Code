@@ -10,26 +10,49 @@ import matplotlib.pyplot as plt
 
 
 class DQN(nn.Module):
+
     def __init__(self, nb_actions):
         super().__init__()
 
-        self.network = nn.Sequential(nn.Conv2d(4, 16, 8, stride=4), nn.ReLU(),
-                                     nn.Conv2d(16, 32, 4, stride=2), nn.ReLU(),
-                                     nn.Flatten(),
-                                     nn.Linear(32*9*9, 256), nn.ReLU(),
-                                     nn.Linear(256, nb_actions))
+        self.network = nn.Sequential(
+            nn.Conv2d(4, 16, 8, stride=4),
+            nn.ReLU(),
+            nn.Conv2d(16, 32, 4, stride=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(32 * 9 * 9, 256),
+            nn.ReLU(),
+            nn.Linear(256, nb_actions),
+        )
 
     def forward(self, x):
-        return self.network(x / 255.)
+        return self.network(x / 255.0)
 
 
-def deep_Q_learning(env, batch_size=32, M=30_000_000, epsilon_start=1., epsilon_end=0.1,
-                    nb_exploration_steps=1_000_000, buffer_size=1_000_000, gamma=0.99,
-                    training_start_it=80_000, update_frequency=4, device='cuda', C=10_000):
-
+def deep_Q_learning(
+    env,
+    batch_size=32,
+    M=30_000_000,
+    epsilon_start=1.0,
+    epsilon_end=0.1,
+    nb_exploration_steps=1_000_000,
+    buffer_size=1_000_000,
+    gamma=0.99,
+    training_start_it=80_000,
+    update_frequency=4,
+    device="cuda",
+    C=10_000,
+):
     # Initialize replay memory D to capacity N
-    rb = ReplayBuffer(buffer_size, env.observation_space, env.action_space, device, n_envs=1,
-                      optimize_memory_usage=True, handle_timeout_termination=False)
+    rb = ReplayBuffer(
+        buffer_size,
+        env.observation_space,
+        env.action_space,
+        device,
+        n_envs=1,
+        optimize_memory_usage=True,
+        handle_timeout_termination=False,
+    )
 
     # Initialize action-value function Q with random weights
     q_network = DQN(env.action_space.n).to(device)
@@ -47,27 +70,30 @@ def deep_Q_learning(env, batch_size=32, M=30_000_000, epsilon_start=1., epsilon_
     epoch = 0
     progress_bar = tqdm(total=M)
     while epoch < M:
-
         # Initialise sequence s1 = {x1}and preprocessed sequenced φ1 = φ(s1)
         state = env.reset()
         dead = False
         total_rewards = 0
 
-        for _ in range(random.randint(1, 30)):  # Noop and fire to reset the environment
+        for _ in range(random.randint(
+                1, 30)):  # Noop and fire to reset the environment
             obs, _, _, info = env.step(1)
 
         # for t= 1,T do
         while not dead:
-
-            epsilon = max((epsilon_end - epsilon_start) * epoch / nb_exploration_steps + epsilon_start,
-                          epsilon_end)
+            epsilon = max(
+                (epsilon_end - epsilon_start) * epoch / nb_exploration_steps +
+                epsilon_start,
+                epsilon_end,
+            )
             # With probability ϵ select a random action a
             if np.random.rand() < epsilon:
                 action = np.array(env.action_space.sample())
             # otherwise select at = maxa Q∗(φ(st),a; θ)
             else:
                 with torch.no_grad():
-                    q = q_network(torch.tensor(state).unsqueeze(0).to(device))  # [1, nb_actions]
+                    q = q_network(torch.tensor(state).unsqueeze(0).to(
+                        device))  # [1, nb_actions]
                     action = torch.argmax(q, dim=1).item()
 
             # Execute action at in emulator and observe reward rt and image xt+1
@@ -89,12 +115,14 @@ def deep_Q_learning(env, batch_size=32, M=30_000_000, epsilon_start=1., epsilon_
 
                 # Set yj to rj + γ maxa′ Q(φj+1,a′; θ)
                 with torch.no_grad():
+                    max_q_value_next_state = (target_q_network(
+                        batch.next_observations).max(dim=1).values)
+                    y_j = batch.rewards.squeeze(
+                        -1) + gamma * max_q_value_next_state * (
+                            1.0 - batch.dones.squeeze(-1).float())
 
-                    max_q_value_next_state = target_q_network(batch.next_observations).max(dim=1).values
-                    y_j = batch.rewards.squeeze(-1) + gamma * max_q_value_next_state * (
-                        1. - batch.dones.squeeze(-1).float())
-
-                current_q_value = q_network(batch.observations).gather(1, batch.actions).squeeze(-1)
+                current_q_value = (q_network(batch.observations).gather(
+                    1, batch.actions).squeeze(-1))
 
                 # Perform a gradient descent step on (yj−Q(φj,aj; θ))2 according to equation 3
                 loss = torch.nn.functional.huber_loss(y_j, current_q_value)
@@ -107,10 +135,10 @@ def deep_Q_learning(env, batch_size=32, M=30_000_000, epsilon_start=1., epsilon_
                 smoothed_rewards.append(np.mean(rewards))
                 rewards = []
                 plt.plot(smoothed_rewards)
-                plt.title('Average Reward on Breakout')
-                plt.xlabel('Training Epochs')
-                plt.ylabel('Average Reward per Episode')
-                plt.savefig('average_rewards_target_dqn.png')
+                plt.title("Average Reward on Breakout")
+                plt.xlabel("Training Epochs")
+                plt.ylabel("Average Reward per Episode")
+                plt.savefig("average_rewards_target_dqn.png")
                 plt.close()
             epoch += 1
 
@@ -123,7 +151,8 @@ def deep_Q_learning(env, batch_size=32, M=30_000_000, epsilon_start=1., epsilon_
 
         if total_rewards >= max_reward:
             max_reward = total_rewards
-            torch.save(q_network.cpu(), f"target_q_network_{epoch}_{max_reward}")
+            torch.save(q_network.cpu(),
+                       f"target_q_network_{epoch}_{max_reward}")
             q_network.to(device)
 
 
@@ -134,6 +163,16 @@ if __name__ == "__main__":
     env = gym.wrappers.FrameStack(env, 4)
     env = MaxAndSkipEnv(env, skip=4)
 
-    deep_Q_learning(env, batch_size=32, M=30_000_000, epsilon_start=1., epsilon_end=0.01,
-                    nb_exploration_steps=1_000_000, buffer_size=1_000_000, gamma=0.99,
-                    training_start_it=80_000, update_frequency=4, device='cuda')
+    deep_Q_learning(
+        env,
+        batch_size=32,
+        M=30_000_000,
+        epsilon_start=1.0,
+        epsilon_end=0.01,
+        nb_exploration_steps=1_000_000,
+        buffer_size=1_000_000,
+        gamma=0.99,
+        training_start_it=80_000,
+        update_frequency=4,
+        device="cuda",
+    )

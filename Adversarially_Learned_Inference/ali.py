@@ -7,8 +7,8 @@ import scipy.io
 
 # Load and prepare training set
 img_size = (32, 32)
-img_data = scipy.io.loadmat('train_32x32.mat')["X"].T
-trainX = torch.tensor(img_data, dtype=torch.float) / 255.
+img_data = scipy.io.loadmat("train_32x32.mat")["X"].T
+trainX = torch.tensor(img_data, dtype=torch.float) / 255.0
 
 
 def sample_bach(batch_size, device):
@@ -25,19 +25,61 @@ class GeneratorZ(nn.Module):
     def __init__(self):
         super(GeneratorZ, self).__init__()
         self.network = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=(5, 5), stride=(1, 1), padding=(0, 0), bias=False),
-            nn.BatchNorm2d(32, momentum=0.05), nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Conv2d(32, 64, kernel_size=(4, 4), stride=(2, 2), padding=(0, 0), bias=False),
-            nn.BatchNorm2d(64, momentum=0.05), nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Conv2d(64, 128, kernel_size=(4, 4), stride=(1, 1), padding=(0, 0), bias=False),
-            nn.BatchNorm2d(128, momentum=0.05), nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Conv2d(128, 256, kernel_size=(4, 4), stride=(2, 2), padding=(0, 0), bias=False),
-            nn.BatchNorm2d(256, momentum=0.05), nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Conv2d(256, 512, kernel_size=(4, 4), stride=(1, 1), padding=(0, 0), bias=False),
-            nn.BatchNorm2d(512, momentum=0.05), nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Conv2d(512, 512, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), bias=True),
-            nn.BatchNorm2d(512, momentum=0.05), nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Conv2d(512, 512, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), bias=False))
+            nn.Conv2d(3,
+                      32,
+                      kernel_size=(5, 5),
+                      stride=(1, 1),
+                      padding=(0, 0),
+                      bias=False),
+            nn.BatchNorm2d(32, momentum=0.05),
+            nn.LeakyReLU(negative_slope=0.01, inplace=True),
+            nn.Conv2d(32,
+                      64,
+                      kernel_size=(4, 4),
+                      stride=(2, 2),
+                      padding=(0, 0),
+                      bias=False),
+            nn.BatchNorm2d(64, momentum=0.05),
+            nn.LeakyReLU(negative_slope=0.01, inplace=True),
+            nn.Conv2d(64,
+                      128,
+                      kernel_size=(4, 4),
+                      stride=(1, 1),
+                      padding=(0, 0),
+                      bias=False),
+            nn.BatchNorm2d(128, momentum=0.05),
+            nn.LeakyReLU(negative_slope=0.01, inplace=True),
+            nn.Conv2d(128,
+                      256,
+                      kernel_size=(4, 4),
+                      stride=(2, 2),
+                      padding=(0, 0),
+                      bias=False),
+            nn.BatchNorm2d(256, momentum=0.05),
+            nn.LeakyReLU(negative_slope=0.01, inplace=True),
+            nn.Conv2d(256,
+                      512,
+                      kernel_size=(4, 4),
+                      stride=(1, 1),
+                      padding=(0, 0),
+                      bias=False),
+            nn.BatchNorm2d(512, momentum=0.05),
+            nn.LeakyReLU(negative_slope=0.01, inplace=True),
+            nn.Conv2d(512,
+                      512,
+                      kernel_size=(1, 1),
+                      stride=(1, 1),
+                      padding=(0, 0),
+                      bias=True),
+            nn.BatchNorm2d(512, momentum=0.05),
+            nn.LeakyReLU(negative_slope=0.01, inplace=True),
+            nn.Conv2d(512,
+                      512,
+                      kernel_size=(1, 1),
+                      stride=(1, 1),
+                      padding=(0, 0),
+                      bias=False),
+        )
 
     def forward(self, x):
         z = self.network(x)
@@ -56,19 +98,27 @@ class GeneratorX(nn.Module):
         super(GeneratorX, self).__init__()
 
         self.network = nn.Sequential(
-            nn.ConvTranspose2d(256, 256, 4, stride=1, padding=0, bias=False), nn.BatchNorm2d(256, momentum=0.05),
+            nn.ConvTranspose2d(256, 256, 4, stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(256, momentum=0.05),
             nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.ConvTranspose2d(256, 128, 4, stride=2, padding=0, bias=False), nn.BatchNorm2d(128, momentum=0.05),
+            nn.ConvTranspose2d(256, 128, 4, stride=2, padding=0, bias=False),
+            nn.BatchNorm2d(128, momentum=0.05),
             nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.ConvTranspose2d(128, 64, 4, stride=1, padding=0, bias=False), nn.BatchNorm2d(64, momentum=0.05),
+            nn.ConvTranspose2d(128, 64, 4, stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(64, momentum=0.05),
             nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.ConvTranspose2d(64, 32, 4, stride=2, padding=0, bias=False), nn.BatchNorm2d(32, momentum=0.05),
+            nn.ConvTranspose2d(64, 32, 4, stride=2, padding=0, bias=False),
+            nn.BatchNorm2d(32, momentum=0.05),
             nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.ConvTranspose2d(32, 32, 5, stride=1, padding=0, bias=False), nn.BatchNorm2d(32, momentum=0.05),
+            nn.ConvTranspose2d(32, 32, 5, stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(32, momentum=0.05),
             nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Conv2d(32, 32, kernel_size=1, stride=1, padding=0, bias=False), nn.BatchNorm2d(32, momentum=0.05),
+            nn.Conv2d(32, 32, kernel_size=1, stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(32, momentum=0.05),
             nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Conv2d(32, 3, kernel_size=1, stride=1, padding=0, bias=True), nn.Sigmoid())
+            nn.Conv2d(32, 3, kernel_size=1, stride=1, padding=0, bias=True),
+            nn.Sigmoid(),
+        )
 
     def forward(self, noise):
         return self.network(noise)
@@ -79,36 +129,107 @@ class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
         self.discriminator_x = nn.Sequential(
-            nn.Dropout(0.2), nn.Conv2d(3, 32, kernel_size=(5, 5), stride=(1, 1), padding=(0, 0), bias=False),
+            nn.Dropout(0.2),
+            nn.Conv2d(3,
+                      32,
+                      kernel_size=(5, 5),
+                      stride=(1, 1),
+                      padding=(0, 0),
+                      bias=False),
             nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Dropout(0.2), nn.Conv2d(32, 64, kernel_size=(4, 4), stride=(2, 2), padding=(0, 0), bias=False),
-            nn.BatchNorm2d(64, momentum=0.05), nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Dropout(0.2), nn.Conv2d(64, 128, kernel_size=(4, 4), stride=(1, 1), padding=(0, 0), bias=False),
-            nn.BatchNorm2d(128, momentum=0.05), nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Dropout(0.2), nn.Conv2d(128, 256, kernel_size=(4, 4), stride=(2, 2), padding=(0, 0), bias=False),
-            nn.BatchNorm2d(256, momentum=0.05), nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Dropout(0.2), nn.Conv2d(256, 512, kernel_size=(4, 4), stride=(1, 1), padding=(0, 0), bias=False),
-            nn.BatchNorm2d(512, momentum=0.05), nn.LeakyReLU(negative_slope=0.01, inplace=True), )
+            nn.Dropout(0.2),
+            nn.Conv2d(32,
+                      64,
+                      kernel_size=(4, 4),
+                      stride=(2, 2),
+                      padding=(0, 0),
+                      bias=False),
+            nn.BatchNorm2d(64, momentum=0.05),
+            nn.LeakyReLU(negative_slope=0.01, inplace=True),
+            nn.Dropout(0.2),
+            nn.Conv2d(64,
+                      128,
+                      kernel_size=(4, 4),
+                      stride=(1, 1),
+                      padding=(0, 0),
+                      bias=False),
+            nn.BatchNorm2d(128, momentum=0.05),
+            nn.LeakyReLU(negative_slope=0.01, inplace=True),
+            nn.Dropout(0.2),
+            nn.Conv2d(128,
+                      256,
+                      kernel_size=(4, 4),
+                      stride=(2, 2),
+                      padding=(0, 0),
+                      bias=False),
+            nn.BatchNorm2d(256, momentum=0.05),
+            nn.LeakyReLU(negative_slope=0.01, inplace=True),
+            nn.Dropout(0.2),
+            nn.Conv2d(256,
+                      512,
+                      kernel_size=(4, 4),
+                      stride=(1, 1),
+                      padding=(0, 0),
+                      bias=False),
+            nn.BatchNorm2d(512, momentum=0.05),
+            nn.LeakyReLU(negative_slope=0.01, inplace=True),
+        )
 
         self.discriminator_z = nn.Sequential(
-            nn.Dropout(0.2), nn.Conv2d(256, 512, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), bias=False),
+            nn.Dropout(0.2),
+            nn.Conv2d(256,
+                      512,
+                      kernel_size=(1, 1),
+                      stride=(1, 1),
+                      padding=(0, 0),
+                      bias=False),
             nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Dropout(0.2), nn.Conv2d(512, 512, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), bias=False),
-            nn.LeakyReLU(negative_slope=0.01, inplace=True))
+            nn.Dropout(0.2),
+            nn.Conv2d(512,
+                      512,
+                      kernel_size=(1, 1),
+                      stride=(1, 1),
+                      padding=(0, 0),
+                      bias=False),
+            nn.LeakyReLU(negative_slope=0.01, inplace=True),
+        )
 
         self.discriminator_xz = nn.Sequential(
-            nn.Dropout(0.2), nn.Conv2d(1024, 1024, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), bias=True),
+            nn.Dropout(0.2),
+            nn.Conv2d(1024,
+                      1024,
+                      kernel_size=(1, 1),
+                      stride=(1, 1),
+                      padding=(0, 0),
+                      bias=True),
             nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Dropout(0.2), nn.Conv2d(1024, 1024, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), bias=False),
+            nn.Dropout(0.2),
+            nn.Conv2d(
+                1024,
+                1024,
+                kernel_size=(1, 1),
+                stride=(1, 1),
+                padding=(0, 0),
+                bias=False,
+            ),
             nn.LeakyReLU(negative_slope=0.01, inplace=True),
-            nn.Dropout(0.2), nn.Conv2d(1024, 1, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), bias=False),
-            nn.Sigmoid())
+            nn.Dropout(0.2),
+            nn.Conv2d(1024,
+                      1,
+                      kernel_size=(1, 1),
+                      stride=(1, 1),
+                      padding=(0, 0),
+                      bias=False),
+            nn.Sigmoid(),
+        )
 
     def forward(self, x, z):
-        return self.discriminator_xz(torch.cat((self.discriminator_z(z), self.discriminator_x(x)), dim=1))
+        return self.discriminator_xz(
+            torch.cat((self.discriminator_z(z), self.discriminator_x(x)),
+                      dim=1))
 
 
-def Ali(g_x, g_z, d, optimizers, nb_epochs, batch_size=100, device='cpu'):
+def Ali(g_x, g_z, d, optimizers, nb_epochs, batch_size=100, device="cpu"):
     for _ in tqdm(range(nb_epochs)):
         # Draw M samples from the dataset and the prior
         x = sample_bach(batch_size, device)
@@ -123,8 +244,11 @@ def Ali(g_x, g_z, d, optimizers, nb_epochs, batch_size=100, device='cpu'):
         pho_p = d(x_hat, z)
 
         # Compute discriminator loss
-        L_d = torch.nn.BCELoss()(pho_q.reshape(batch_size), torch.ones(batch_size, device=device)) + torch.nn.BCELoss()(
-            pho_p.reshape(batch_size), torch.zeros(batch_size, device=device))
+        L_d = torch.nn.BCELoss()(
+            pho_q.reshape(batch_size), torch.ones(
+                batch_size, device=device)) + torch.nn.BCELoss()(
+                    pho_p.reshape(batch_size),
+                    torch.zeros(batch_size, device=device))
 
         optimizers[2].zero_grad()
         L_d.backward()
@@ -143,8 +267,11 @@ def Ali(g_x, g_z, d, optimizers, nb_epochs, batch_size=100, device='cpu'):
         pho_p = d(x_hat, z)
 
         # Compute generator loss
-        L_g = torch.nn.BCELoss()(pho_p.reshape(batch_size), torch.ones(batch_size, device=device)) + torch.nn.BCELoss()(
-            pho_q.reshape(batch_size), torch.zeros(batch_size, device=device))
+        L_g = torch.nn.BCELoss()(
+            pho_p.reshape(batch_size), torch.ones(
+                batch_size, device=device)) + torch.nn.BCELoss()(
+                    pho_q.reshape(batch_size),
+                    torch.zeros(batch_size, device=device))
 
         optimizers[0].zero_grad()
         optimizers[1].zero_grad()
@@ -165,7 +292,7 @@ def init_weights(module):
 
 
 if __name__ == "__main__":
-    device = 'cuda'
+    device = "cuda"
 
     gz = GeneratorZ().to(device)
     gx = GeneratorX().to(device)
@@ -175,18 +302,20 @@ if __name__ == "__main__":
     gz.apply(init_weights)
     d.apply(init_weights)
 
-    optimizers = [optim.Adam(gz.parameters(), lr=0.0001, betas=(0.5, 0.999)),
-                  optim.Adam(gx.parameters(), lr=0.0001, betas=(0.5, 0.999)),
-                  optim.Adam(d.parameters(), lr=0.0001, betas=(0.5, 0.999))]
+    optimizers = [
+        optim.Adam(gz.parameters(), lr=0.0001, betas=(0.5, 0.999)),
+        optim.Adam(gx.parameters(), lr=0.0001, betas=(0.5, 0.999)),
+        optim.Adam(d.parameters(), lr=0.0001, betas=(0.5, 0.999)),
+    ]
 
     Ali(gx, gz, d, optimizers, 73_000, device=device)
 
-    NB_IMAGES = 8 ** 2
+    NB_IMAGES = 8**2
     z = sample_latent(NB_IMAGES, device)
     x_hat = gx(z)
     plt.figure(figsize=(12, 12))
     for i in range(NB_IMAGES):
         plt.subplot(8, 8, 1 + i)
-        plt.axis('off')
+        plt.axis("off")
         plt.imshow(x_hat[i].data.cpu().numpy().T)
     plt.savefig("Img/ali.png")

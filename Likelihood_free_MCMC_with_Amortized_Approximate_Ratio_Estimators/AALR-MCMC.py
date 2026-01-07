@@ -4,16 +4,23 @@ from tqdm import tqdm
 from torch.distributions.multivariate_normal import MultivariateNormal
 from torch.distributions.uniform import Uniform
 import matplotlib.pyplot as plt
+
 torch.manual_seed(1)
 
 
 class MLP(nn.Module):
+
     def __init__(self, input_dim=13, output_dim=1, hidden_dim=256):
         super(MLP, self).__init__()
-        self.layers = nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.SELU(),
-                                    nn.Linear(hidden_dim, hidden_dim), nn.SELU(),
-                                    nn.Linear(hidden_dim, hidden_dim), nn.SELU(),
-                                    nn.Linear(hidden_dim, output_dim))
+        self.layers = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.SELU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.SELU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.SELU(),
+            nn.Linear(hidden_dim, output_dim),
+        )
 
     def forward(self, x):
         log_ratio = self.layers(x)
@@ -25,13 +32,18 @@ class UniformPrior:
 
     @staticmethod
     def log_prob(x_batch):
-        uniform = Uniform(torch.zeros(x_batch.shape[0], 5) + torch.tensor([-3.]),
-                          torch.zeros(x_batch.shape[0], 5) + torch.tensor([3.]))
+        uniform = Uniform(
+            torch.zeros(x_batch.shape[0], 5) + torch.tensor([-3.0]),
+            torch.zeros(x_batch.shape[0], 5) + torch.tensor([3.0]),
+        )
         return uniform.log_prob(x_batch).sum(1)
 
     @staticmethod
     def sample(size):
-        uniform = Uniform(torch.zeros(size, 5) + torch.tensor([-3.]), torch.zeros(size, 5) + torch.tensor([3.]))
+        uniform = Uniform(
+            torch.zeros(size, 5) + torch.tensor([-3.0]),
+            torch.zeros(size, 5) + torch.tensor([3.0]),
+        )
         return uniform.sample()
 
 
@@ -80,7 +92,14 @@ class SLCPSimulator:
         return x
 
 
-def algorithm1(simulator, prior, criterion=nn.BCELoss(), batch_size=256, nb_epochs=int(1e6 / 256), device='cpu'):
+def algorithm1(
+        simulator,
+        prior,
+        criterion=nn.BCELoss(),
+        batch_size=256,
+        nb_epochs=int(1e6 / 256),
+        device="cpu",
+):
     model = MLP()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     training_loss = []
@@ -90,9 +109,11 @@ def algorithm1(simulator, prior, criterion=nn.BCELoss(), batch_size=256, nb_epoc
         theta_prime = prior.sample(batch_size)
         x = simulator.simulate(theta)
 
-        nn_input = torch.cat((torch.cat((theta, theta_prime)), torch.cat((x, x))), dim=1).to(device)
+        nn_input = torch.cat((torch.cat((theta, theta_prime)), torch.cat(
+            (x, x))),
+                             dim=1).to(device)
         target = torch.zeros(2 * batch_size, device=device)
-        target[:batch_size] = 1.
+        target[:batch_size] = 1.0
         classifier_output, log_ratio = model(nn_input)
         loss = criterion(classifier_output.squeeze(-1), target)
 
@@ -104,8 +125,16 @@ def algorithm1(simulator, prior, criterion=nn.BCELoss(), batch_size=256, nb_epoc
     return training_loss, model
 
 
-def likelihood_free_metropolis_hastings(prior, transition_distribution, ratio_estimator, observation_x,
-                                        T=5000, eps=1e-15, thinning=10, num_chains=10):
+def likelihood_free_metropolis_hastings(
+    prior,
+    transition_distribution,
+    ratio_estimator,
+    observation_x,
+    T=5000,
+    eps=1e-15,
+    thinning=10,
+    num_chains=10,
+):
     """
     Algorithm 2 from Appendix A + thinning & multiple chains
     :param T: number of samples per chain
@@ -118,15 +147,27 @@ def likelihood_free_metropolis_hastings(prior, transition_distribution, ratio_es
         theta_prime = transition_distribution.sample(theta_t)
 
         _, log_ratio = ratio_estimator(
-            torch.cat((theta_t, observation_x.repeat(num_chains, observation_x.shape[0])), dim=1))
+            torch.cat(
+                (theta_t,
+                 observation_x.repeat(num_chains, observation_x.shape[0])),
+                dim=1,
+            ))
         _, log_ratio_prime = ratio_estimator(
-            torch.cat((theta_prime, observation_x.repeat(num_chains, observation_x.shape[0])), dim=1))
+            torch.cat(
+                (theta_prime,
+                 observation_x.repeat(num_chains, observation_x.shape[0])),
+                dim=1,
+            ))
         log_prior = prior.log_prob(theta_t)
         log_prior_prime = prior.log_prob(theta_prime)
-        lambda_ = log_ratio_prime.squeeze() + log_prior_prime - (log_ratio.squeeze() + log_prior)
-        q_theta_given_theta_prime = torch.exp(transition_distribution.log_prob(theta_t, theta_prime))
-        q_theta_prime_given_theta = torch.exp(transition_distribution.log_prob(theta_prime, theta_t))
-        pho = torch.exp(lambda_) * q_theta_given_theta_prime / (q_theta_prime_given_theta + eps)
+        lambda_ = (log_ratio_prime.squeeze() + log_prior_prime -
+                   (log_ratio.squeeze() + log_prior))
+        q_theta_given_theta_prime = torch.exp(
+            transition_distribution.log_prob(theta_t, theta_prime))
+        q_theta_prime_given_theta = torch.exp(
+            transition_distribution.log_prob(theta_prime, theta_t))
+        pho = (torch.exp(lambda_) * q_theta_given_theta_prime /
+               (q_theta_prime_given_theta + eps))
         pho[pho > 1] = 1
 
         # Update theta with probability pho
@@ -142,20 +183,27 @@ def make_plot(samples, savepath, theta_star, fig_size=(8, 8)):
     fig = plt.figure(figsize=fig_size)
     for i in range(samples.shape[1]):
         for j in range(i + 1):
-            ax = plt.subplot(samples.shape[1], samples.shape[1], i * samples.shape[1] + j + 1)
+            ax = plt.subplot(samples.shape[1], samples.shape[1],
+                             i * samples.shape[1] + j + 1)
             if i == j:
-                ax.hist(samples[:, i], bins=50, histtype='step', color='k')
+                ax.hist(samples[:, i], bins=50, histtype="step", color="k")
                 ax.axvline(theta_star[i])
             else:
-                ax.scatter(samples[:, j], samples[:, i], c='k', alpha=0.015, s=.2)
+                ax.scatter(samples[:, j],
+                           samples[:, i],
+                           c="k",
+                           alpha=0.015,
+                           s=0.2)
                 ax.set_ylim([-3.5, 3.5])
-                ax.axvline(theta_star[j]); ax.axhline(theta_star[i])
+                ax.axvline(theta_star[j])
+                ax.axhline(theta_star[i])
             if i < samples.shape[1] - 1:
                 ax.set_xticks([])
             ax.set_xlim([-3.5, 3.5])
             ax.set_yticks([])
 
-    plt.savefig(savepath); plt.close()
+    plt.savefig(savepath)
+    plt.close()
 
 
 if __name__ == "__main__":
@@ -163,6 +211,12 @@ if __name__ == "__main__":
     loss, ratio_estimator = algorithm1(simulator, UniformPrior())
     gt_parameters = simulator.get_ground_truth_parameters()
     observation = simulator.simulate(gt_parameters.unsqueeze(0))
-    samples = likelihood_free_metropolis_hastings(UniformPrior(), MultivariateNormalTransitionDistribution(),
-                                                  ratio_estimator, observation, T=2000).data.cpu().numpy()
-    make_plot(samples, 'Imgs/posteriors_from_the_tractable_benchmark.png', gt_parameters)
+    samples = (likelihood_free_metropolis_hastings(
+        UniformPrior(),
+        MultivariateNormalTransitionDistribution(),
+        ratio_estimator,
+        observation,
+        T=2000,
+    ).data.cpu().numpy())
+    make_plot(samples, "Imgs/posteriors_from_the_tractable_benchmark.png",
+              gt_parameters)

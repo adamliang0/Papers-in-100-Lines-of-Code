@@ -9,12 +9,14 @@ from keras.datasets.mnist import load_data
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
+
 def squeeze2d(x, factor=2):
     B, C, H, W = x.size()
     x = x.view(B, C, H // factor, factor, W // factor, factor)
     x = x.permute(0, 1, 3, 5, 2, 4).contiguous()
     x = x.view(B, C * factor * factor, H // factor, W // factor)
     return x
+
 
 def unsqueeze2d(x, factor=2):
     B, C, H, W = x.size()
@@ -23,6 +25,7 @@ def unsqueeze2d(x, factor=2):
     x = x.view(B, C // (factor * factor), H * factor, W * factor)
     return x
 
+
 def checkerboard_mask(H, W, invert=False, device=None):
     y = torch.arange(H, device=device).view(-1, 1)
     x = torch.arange(W, device=device).view(1, -1)
@@ -30,6 +33,7 @@ def checkerboard_mask(H, W, invert=False, device=None):
     if invert:
         m = 1.0 - m
     return m.view(1, 1, H, W)
+
 
 def channel_mask(C, first_half=True, device=None):
     m = torch.zeros(C, device=device)
@@ -40,13 +44,15 @@ def channel_mask(C, first_half=True, device=None):
         m[half:] = 1.0
     return m.view(1, C, 1, 1)
 
+
 class BatchNorm2dNoAffine(nn.Module):
+
     def __init__(self, num_features, momentum=0.9, eps=1e-5):
         super().__init__()
         self.momentum = momentum
         self.eps = eps
         self.register_buffer("running_mean", torch.zeros(1, num_features, 1, 1))
-        self.register_buffer("running_var",  torch.ones(1, num_features, 1, 1))
+        self.register_buffer("running_var", torch.ones(1, num_features, 1, 1))
 
     def _compute_stats_and_update(self, x):
         m = x.mean(dim=[0, 2, 3], keepdim=True)
@@ -66,21 +72,27 @@ class BatchNorm2dNoAffine(nn.Module):
         if reverse:
             y = x * torch.sqrt(var + self.eps) + mean
             if return_logdet:
-                ld = (H * W) * 0.5 * torch.sum(torch.log(var + self.eps)).expand(B)
+                ld = (H * W) * 0.5 * torch.sum(
+                    torch.log(var + self.eps)).expand(B)
                 return y, ld
             return y
         else:
             y = (x - mean) / torch.sqrt(var + self.eps)
             if return_logdet:
-                ld = -(H * W) * 0.5 * torch.sum(torch.log(var + self.eps)).expand(B)
+                ld = -(H * W) * 0.5 * torch.sum(
+                    torch.log(var + self.eps)).expand(B)
                 return y, ld
             return y
 
+
 class ResBlock(nn.Module):
+
     def __init__(self, channels, hidden):
         super().__init__()
-        self.conv1 = utils.weight_norm(nn.Conv2d(channels, hidden, kernel_size=3, padding=1))
-        self.conv2 = utils.weight_norm(nn.Conv2d(hidden, channels, kernel_size=1))
+        self.conv1 = utils.weight_norm(
+            nn.Conv2d(channels, hidden, kernel_size=3, padding=1))
+        self.conv2 = utils.weight_norm(
+            nn.Conv2d(hidden, channels, kernel_size=1))
         self.bn1 = BatchNorm2dNoAffine(hidden)
 
     def forward(self, x):
@@ -88,17 +100,21 @@ class ResBlock(nn.Module):
         h = self.conv2(h)
         return x + h
 
+
 class STNet(nn.Module):
+
     def __init__(self, channels, hidden):
         super().__init__()
         self.model = nn.Sequential(
-            nn.Conv2d(channels, hidden, kernel_size=3, padding=1), nn.ReLU(),
+            nn.Conv2d(channels, hidden, kernel_size=3, padding=1),
+            nn.ReLU(),
             ResBlock(hidden, hidden),
             ResBlock(hidden, hidden),
             ResBlock(hidden, hidden),
             ResBlock(hidden, hidden),
-            nn.Conv2d(hidden, hidden, kernel_size=1), nn.ReLU(),
-            nn.Conv2d(hidden, 2*channels, kernel_size=3, padding=1)
+            nn.Conv2d(hidden, hidden, kernel_size=1),
+            nn.ReLU(),
+            nn.Conv2d(hidden, 2 * channels, kernel_size=3, padding=1),
         )
         self.logscale = nn.Parameter(torch.zeros(1))
 
@@ -106,15 +122,20 @@ class STNet(nn.Module):
         st = self.model(x)
         C = st.size(1) // 2
         s, t = st[:, :C], st[:, C:]
-        s = torch.tanh(s) * torch.exp(self.logscale + torch.tensor(1.0, device=s.device))
+        s = torch.tanh(s) * torch.exp(self.logscale +
+                                      torch.tensor(1.0, device=s.device))
         return s, t
 
+
 class Coupling(nn.Module):
+
     def __init__(self, channels, mask, hidden=64, bn_momentum=0.9, bn_eps=1e-5):
         super().__init__()
         self.register_buffer("mask", mask)
         self.st = STNet(channels, hidden)
-        self.bn_out = BatchNorm2dNoAffine(channels, momentum=bn_momentum, eps=bn_eps)
+        self.bn_out = BatchNorm2dNoAffine(channels,
+                                          momentum=bn_momentum,
+                                          eps=bn_eps)
 
     def forward(self, x, reverse=False):
         if reverse:
@@ -128,15 +149,20 @@ class Coupling(nn.Module):
         x_id = self.mask * x
         s, t = self.st(x_id)
         y_raw = x_id + (1 - self.mask) * (x * torch.exp(s) + t)
-        ld_affine = (((1 - self.mask) * s).sum(dim=(1, 2, 3)))
+        ld_affine = ((1 - self.mask) * s).sum(dim=(1, 2, 3))
         y, ld_bn = self.bn_out(y_raw, reverse=False, return_logdet=True)
         return y, (ld_affine + ld_bn)
 
+
 class Squeeze(nn.Module):
+
     def forward(self, x, reverse=False):
-        return (unsqueeze2d(x) if reverse else squeeze2d(x)), torch.zeros(x.size(0), device=x.device)
+        return (unsqueeze2d(x) if reverse else squeeze2d(x)), torch.zeros(
+            x.size(0), device=x.device)
+
 
 class RealNVP(nn.Module):
+
     def __init__(self):
         super().__init__()
 
@@ -169,7 +195,7 @@ class RealNVP(nn.Module):
             Coupling(channels=16, mask=cb_m0_7, hidden=128),
             Coupling(channels=16, mask=cb_m1_7, hidden=128),
             Coupling(channels=16, mask=cb_m0_7, hidden=128),
-            Coupling(channels=16, mask=cb_m1_7, hidden=128)
+            Coupling(channels=16, mask=cb_m1_7, hidden=128),
         ])
 
     def forward(self, x, reverse=False):
@@ -185,7 +211,9 @@ class RealNVP(nn.Module):
                 logdet += ld
             return x, logdet
 
+
 class LogitTransform(nn.Module):
+
     def __init__(self, alpha=1e-6):
         super().__init__()
         self.alpha = float(alpha)
@@ -196,25 +224,32 @@ class LogitTransform(nn.Module):
             a = self.alpha
             s = a + (1 - 2 * a) * x
             y = torch.log(s) - torch.log(1 - s)
-            ld = (np.log(1 - 2 * a) * D) - (torch.log(s) + torch.log(1 - s)).sum(dim=(1, 2, 3))
+            ld = (np.log(1 - 2 * a) * D) - (torch.log(s) +
+                                            torch.log(1 - s)).sum(dim=(1, 2, 3))
             return y, ld
         else:
             y = x
             s = torch.sigmoid(y)
             a = self.alpha
             x = (s - a) / (1 - 2 * a)
-            ld = - (np.log(1 - 2 * a) * D) + (torch.log(s) + torch.log(1 - s)).sum(dim=(1, 2, 3))
+            ld = -(np.log(1 - 2 * a) * D) + (
+                torch.log(s) + torch.log(1 - s)).sum(dim=(1, 2, 3))
             return x, ld
+
 
 def gaussian_log_p(z):
     D = z[0].numel()
-    return -0.5 * (z ** 2).sum(dim=(1, 2, 3)) - 0.5 * D * torch.log(torch.tensor(2 * np.pi, device=z.device))
+    return -0.5 * (z**2).sum(dim=(1, 2, 3)) - 0.5 * D * torch.log(
+        torch.tensor(2 * np.pi, device=z.device))
+
 
 if __name__ == "__main__":
     (trainX, _), (testX, _) = load_data()
     trainX = torch.from_numpy(np.float32(trainX) / 255.0)
     train_loader = DataLoader(TensorDataset(trainX[:, None]),
-                              batch_size=128, shuffle=True, drop_last=True)
+                              batch_size=128,
+                              shuffle=True,
+                              drop_last=True)
 
     n_epochs = 200
     device = "cuda"
@@ -231,7 +266,8 @@ if __name__ == "__main__":
 
             u = torch.rand_like(x_batch)  # Uniform dequantization
             x_deq = (x_batch * 255.0 + u) / 256.0
-            y, logdet_logit = logit_transform(x_deq, reverse=False)  # Logit transform
+            y, logdet_logit = logit_transform(x_deq,
+                                              reverse=False)  # Logit transform
             z, logdet_flow = model(y, reverse=False)
 
             log_pz = gaussian_log_p(z)
@@ -256,4 +292,4 @@ if __name__ == "__main__":
             axes[i, j].imshow(imgs[i * n_cols + j], cmap="gray")
             axes[i, j].axis("off")
     plt.tight_layout()
-    plt.savefig('Imgs/generated_samples.png')
+    plt.savefig("Imgs/generated_samples.png")

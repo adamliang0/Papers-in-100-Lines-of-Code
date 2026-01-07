@@ -10,11 +10,13 @@ from os.path import isfile, join
 import torchvision.transforms as transforms
 
 
-class Dataset():
+class Dataset:
 
-    def __init__(self, data_path='data'):
+    def __init__(self, data_path="data"):
         self.data_path = data_path
-        self.files = [f for f in listdir(data_path) if isfile(join(data_path, f))]
+        self.files = [
+            f for f in listdir(data_path) if isfile(join(data_path, f))
+        ]
         self.len = len(self.files)
 
     def __len__(self):
@@ -25,9 +27,12 @@ class Dataset():
         transform_list += [transforms.Resize(64)]
         transform_list += [transforms.CenterCrop(64)]
         transform_list += [transforms.ToTensor()]
-        transform_list += [transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+        transform_list += [
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ]
         transform = transforms.Compose(transform_list)
-        return transform(Image.open(f'{self.data_path}/' + self.files[index]).convert('RGB'))
+        return transform(
+            Image.open(f"{self.data_path}/" + self.files[index]).convert("RGB"))
 
 
 class Generator(nn.Module):
@@ -36,20 +41,61 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
 
         self.network = nn.Sequential(
-            nn.ConvTranspose2d(100, 512, kernel_size=(4, 4), stride=(1, 1), bias=False),
-            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.ConvTranspose2d(100,
+                               512,
+                               kernel_size=(4, 4),
+                               stride=(1, 1),
+                               bias=False),
+            nn.BatchNorm2d(512,
+                           eps=1e-05,
+                           momentum=0.1,
+                           affine=True,
+                           track_running_stats=True),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(512, 256, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False),
-            nn.BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.ConvTranspose2d(512,
+                               256,
+                               kernel_size=(4, 4),
+                               stride=(2, 2),
+                               padding=(1, 1),
+                               bias=False),
+            nn.BatchNorm2d(256,
+                           eps=1e-05,
+                           momentum=0.1,
+                           affine=True,
+                           track_running_stats=True),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(256, 128, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False),
-            nn.BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.ConvTranspose2d(256,
+                               128,
+                               kernel_size=(4, 4),
+                               stride=(2, 2),
+                               padding=(1, 1),
+                               bias=False),
+            nn.BatchNorm2d(128,
+                           eps=1e-05,
+                           momentum=0.1,
+                           affine=True,
+                           track_running_stats=True),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(128, 64, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False),
-            nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.ConvTranspose2d(128,
+                               64,
+                               kernel_size=(4, 4),
+                               stride=(2, 2),
+                               padding=(1, 1),
+                               bias=False),
+            nn.BatchNorm2d(64,
+                           eps=1e-05,
+                           momentum=0.1,
+                           affine=True,
+                           track_running_stats=True),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(64, 3, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False),
-            nn.Tanh())
+            nn.ConvTranspose2d(64,
+                               3,
+                               kernel_size=(4, 4),
+                               stride=(2, 2),
+                               padding=(1, 1),
+                               bias=False),
+            nn.Tanh(),
+        )
 
     def forward(self, noise):
         return self.network(noise)
@@ -60,18 +106,51 @@ class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
         self.network = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False),
+            nn.Conv2d(3,
+                      64,
+                      kernel_size=(4, 4),
+                      stride=(2, 2),
+                      padding=(1, 1),
+                      bias=False),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            nn.Conv2d(64, 128, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False),
-            nn.BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.Conv2d(64,
+                      128,
+                      kernel_size=(4, 4),
+                      stride=(2, 2),
+                      padding=(1, 1),
+                      bias=False),
+            nn.BatchNorm2d(128,
+                           eps=1e-05,
+                           momentum=0.1,
+                           affine=True,
+                           track_running_stats=True),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            nn.Conv2d(128, 256, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False),
-            nn.BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.Conv2d(128,
+                      256,
+                      kernel_size=(4, 4),
+                      stride=(2, 2),
+                      padding=(1, 1),
+                      bias=False),
+            nn.BatchNorm2d(256,
+                           eps=1e-05,
+                           momentum=0.1,
+                           affine=True,
+                           track_running_stats=True),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            nn.Conv2d(256, 512, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False),
-            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.Conv2d(256,
+                      512,
+                      kernel_size=(4, 4),
+                      stride=(2, 2),
+                      padding=(1, 1),
+                      bias=False),
+            nn.BatchNorm2d(512,
+                           eps=1e-05,
+                           momentum=0.1,
+                           affine=True,
+                           track_running_stats=True),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            nn.Conv2d(512, 1, kernel_size=(4, 4), stride=(1, 1), bias=False))
+            nn.Conv2d(512, 1, kernel_size=(4, 4), stride=(1, 1), bias=False),
+        )
 
     def forward(self, x):
         return self.network(x)
@@ -81,15 +160,22 @@ def sample_noise(batch_size, device):
     return torch.randn((batch_size, 100, 1, 1), device=device)
 
 
-def train(generator, critic, generator_optimizer, critic_optimizer, dataloader, nb_epochs=500_000, c=0.01, ncritic=5):
-    training_loss = {'generative': [], 'critic': []}
+def train(
+    generator,
+    critic,
+    generator_optimizer,
+    critic_optimizer,
+    dataloader,
+    nb_epochs=500_000,
+    c=0.01,
+    ncritic=5,
+):
+    training_loss = {"generative": [], "critic": []}
     dataset_iter = iter(dataloader)
 
     for epoch in tqdm(range(nb_epochs)):
-
         k = (20 * ncritic) if ((epoch < 25) or (epoch % 500 == 0)) else ncritic
         for _ in range(k):
-
             # Sample a batch from the real data
             try:
                 x = next(dataset_iter).to(device)
@@ -105,7 +191,7 @@ def train(generator, critic, generator_optimizer, critic_optimizer, dataloader, 
             loss = -(critic(x) - critic(generator(z).detach())).mean()
             loss.backward()
             critic_optimizer.step()
-            training_loss['critic'].append(loss.item())
+            training_loss["critic"].append(loss.item())
 
             with torch.no_grad():
                 for param in critic.parameters():
@@ -122,7 +208,7 @@ def train(generator, critic, generator_optimizer, critic_optimizer, dataloader, 
         generator_optimizer.zero_grad()
         loss.backward()
         generator_optimizer.step()
-        training_loss['generative'].append(loss.item())
+        training_loss["generative"].append(loss.item())
     return training_loss
 
 
@@ -140,11 +226,11 @@ def init_weights(module):
 def moving_average(data, window_size):
     if not isinstance(data, np.ndarray):
         data = np.array(data)
-    return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
+    return np.convolve(data, np.ones(window_size) / window_size, mode="valid")
 
 
 if __name__ == "__main__":
-    device = 'cuda'
+    device = "cuda"
     batch_size = 64
 
     discriminator = Discriminator().to(device)
@@ -154,9 +240,17 @@ if __name__ == "__main__":
     optimizer_d = torch.optim.RMSprop(discriminator.parameters(), lr=0.00005)
     optimizer_g = torch.optim.RMSprop(generator.parameters(), lr=0.00005)
 
-    data = DataLoader(Dataset(data_path='data'), batch_size=64, shuffle=True, num_workers=0)
+    data = DataLoader(Dataset(data_path="data"),
+                      batch_size=64,
+                      shuffle=True,
+                      num_workers=0)
 
-    loss = train(generator, discriminator, optimizer_g, optimizer_d, data, nb_epochs=500_000)
+    loss = train(generator,
+                 discriminator,
+                 optimizer_g,
+                 optimizer_d,
+                 data,
+                 nb_epochs=500_000)
     loss_critic = moving_average(loss["critic"], window_size=1000)
     plt.plot(-loss_critic)
     plt.xlabel("Discriminator iterations", fontsize=13)
@@ -164,13 +258,14 @@ if __name__ == "__main__":
     plt.savefig("Imgs/wgan_loss.png")
     plt.close()
 
-    NB_IMAGES = 8 ** 2
+    NB_IMAGES = 8**2
     generator.eval()
     img = generator(torch.randn(NB_IMAGES, 100, 1, 1, device=device))
     plt.figure(figsize=(12, 12))
     for i in range(NB_IMAGES):
         plt.subplot(8, 8, 1 + i)
-        plt.axis('off')
-        plt.imshow(img[i].data.cpu().transpose(0, 1).transpose(1, 2).numpy() / 2 + .5)
+        plt.axis("off")
+        plt.imshow(img[i].data.cpu().transpose(0, 1).transpose(1, 2).numpy() /
+                   2 + 0.5)
     plt.savefig("Imgs/generated_images.png")
     plt.close()

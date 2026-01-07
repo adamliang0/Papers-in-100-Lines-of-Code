@@ -13,10 +13,14 @@ class D(nn.Module):
         super(D, self).__init__()
 
         self.model = nn.Sequential(
-            nn.Conv2d(in_channels, nd, kd, stride=2, padding=1, bias=True),  # Downsample
-            nn.BatchNorm2d(nd), nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels, nd, kd, stride=2, padding=1,
+                      bias=True),  # Downsample
+            nn.BatchNorm2d(nd),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(nd, nd, kd, stride=1, padding=1, bias=True),
-            nn.BatchNorm2d(nd), nn.LeakyReLU(0.2, inplace=True))
+            nn.BatchNorm2d(nd),
+            nn.LeakyReLU(0.2, inplace=True),
+        )
 
     def forward(self, x):
         return self.model(x)
@@ -29,7 +33,9 @@ class S(nn.Module):
 
         self.model = nn.Sequential(
             nn.Conv2d(in_channels, ns, ks, 1, padding=0, bias=True),
-            nn.BatchNorm2d(ns), nn.LeakyReLU(0.2, inplace=True))
+            nn.BatchNorm2d(ns),
+            nn.LeakyReLU(0.2, inplace=True),
+        )
 
     def forward(self, x):
         return self.model(x)
@@ -40,13 +46,16 @@ class U(nn.Module):
     def __init__(self, in_channels, nu, ku):
         super(U, self).__init__()
 
-        self.model = nn.Sequential(nn.BatchNorm2d(in_channels),
-                                   nn.Conv2d(in_channels, nu, ku, 1, padding=1,
-                                             bias=True),
-                                   nn.BatchNorm2d(nu), nn.LeakyReLU(0.2, inplace=True),
-                                   nn.Conv2d(nu, nu, 1, 1, padding=0, bias=True),
-                                   nn.BatchNorm2d(nu), nn.LeakyReLU(0.2, inplace=True),
-                                   nn.Upsample(scale_factor=2, mode='bilinear'))
+        self.model = nn.Sequential(
+            nn.BatchNorm2d(in_channels),
+            nn.Conv2d(in_channels, nu, ku, 1, padding=1, bias=True),
+            nn.BatchNorm2d(nu),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(nu, nu, 1, 1, padding=0, bias=True),
+            nn.BatchNorm2d(nu),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Upsample(scale_factor=2, mode="bilinear"),
+        )
 
     def forward(self, x):
         return self.model(x)
@@ -96,13 +105,13 @@ if __name__ == "__main__":
     model = Model()
     optimizer = optim.Adam(model.parameters(), lr=0.01)
 
-    image = Image.open('Imgs/snail.jpg')
+    image = Image.open("Imgs/snail.jpg")
     w, h = image.size
     image = image.resize((w - w % 32, h - h % 32), resample=Image.LANCZOS)
     image = torch.from_numpy(np.array(image) / 255.0).unsqueeze(0).float()
-    corrupted_img = (image + torch.randn_like(image) * .1).clip(0, 1)
+    corrupted_img = (image + torch.randn_like(image) * 0.1).clip(0, 1)
     corrupted_img = corrupted_img.transpose(2, 3).transpose(1, 2)
-    z = torch.randn(corrupted_img.shape) * .1
+    z = torch.randn(corrupted_img.shape) * 0.1
 
     for epoch in tqdm(range(2400)):
         img_pred = model.forward(z)
@@ -114,11 +123,11 @@ if __name__ == "__main__":
     plt.figure(figsize=(18, 3.5))
     plt.subplot(1, 3, 1)
     plt.imshow(corrupted_img[0].transpose(0, 1).transpose(1, 2).data.numpy())
-    plt.title('Input', fontsize=15)
+    plt.title("Input", fontsize=15)
     plt.subplot(1, 3, 2)
     plt.imshow(img_pred[0].transpose(0, 1).transpose(1, 2).data.numpy())
-    plt.title('Prediction', fontsize=15)
+    plt.title("Prediction", fontsize=15)
     plt.subplot(1, 3, 3)
     plt.imshow(image[0].data.numpy())
-    plt.title('Ground truth', fontsize=15)
-    plt.savefig('Imgs/deep_image_prior.png')
+    plt.title("Ground truth", fontsize=15)
+    plt.savefig("Imgs/deep_image_prior.png")

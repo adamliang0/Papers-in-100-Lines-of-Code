@@ -12,7 +12,9 @@ def get_timestep_embedding(timesteps, embedding_dim: int):
 
     half_dim = embedding_dim // 2
     emb = math.log(10000) / (half_dim - 1)
-    emb = torch.exp(torch.arange(half_dim, dtype=torch.float32, device=timesteps.device) * -emb)
+    emb = torch.exp(
+        torch.arange(half_dim, dtype=torch.float32, device=timesteps.device) *
+        -emb)
     emb = timesteps.type(torch.float32)[:, None] * emb[None, :]
     emb = torch.concat([torch.sin(emb), torch.cos(emb)], axis=1)
 
@@ -51,7 +53,10 @@ class Upsample(nn.Module):
     def forward(self, x):
         B, C, H, W = x.shape
 
-        x = nn.functional.interpolate(x, size=None, scale_factor=2, mode='nearest')
+        x = nn.functional.interpolate(x,
+                                      size=None,
+                                      scale_factor=2,
+                                      mode="nearest")
 
         x = self.conv(x)
         assert x.shape == (B, C, H * 2, W * 2)
@@ -65,12 +70,14 @@ class Nin(nn.Module):
 
         n = (in_dim + out_dim) / 2
         limit = np.sqrt(3 * scale / n)
-        self.W = torch.nn.Parameter(torch.zeros((in_dim, out_dim), dtype=torch.float32
-                                                ).uniform_(-limit, limit))
-        self.b = torch.nn.Parameter(torch.zeros((1, out_dim, 1, 1), dtype=torch.float32))
+        self.W = torch.nn.Parameter(
+            torch.zeros((in_dim, out_dim),
+                        dtype=torch.float32).uniform_(-limit, limit))
+        self.b = torch.nn.Parameter(
+            torch.zeros((1, out_dim, 1, 1), dtype=torch.float32))
 
     def forward(self, x):
-        return torch.einsum('bchw, co->bohw', x, self.W) + self.b
+        return torch.einsum("bchw, co->bohw", x, self.W) + self.b
 
 
 class ResNetBlock(nn.Module):
@@ -122,7 +129,7 @@ class AttentionBlock(nn.Module):
 
         self.ch = ch
 
-        self.nin = Nin(ch, ch, scale=0.)
+        self.nin = Nin(ch, ch, scale=0.0)
 
     def forward(self, x):
         B, C, H, W = x.shape
@@ -133,12 +140,13 @@ class AttentionBlock(nn.Module):
         k = self.K(h)
         v = self.V(h)
 
-        w = torch.einsum('bchw,bcHW->bhwHW', q, k) * (int(C) ** (-0.5))  # [B, H, W, H, W]
+        w = torch.einsum("bchw,bcHW->bhwHW", q, k) * (int(C)**(-0.5)
+                                                     )  # [B, H, W, H, W]
         w = torch.reshape(w, [B, H, W, H * W])
         w = torch.nn.functional.softmax(w, dim=-1)
         w = torch.reshape(w, [B, H, W, H, W])
 
-        h = torch.einsum('bhwHW,bcHW->bchw', w, v)
+        h = torch.einsum("bhwHW,bcHW->bchw", w, v)
         h = self.nin(h)
 
         assert h.shape == x.shape
@@ -156,42 +164,48 @@ class UNet(nn.Module):
 
         self.conv1 = nn.Conv2d(in_ch, ch, 3, stride=1, padding=1)
 
-        self.down = nn.ModuleList([ResNetBlock(ch, 1 * ch),
-                                   ResNetBlock(1 * ch, 1 * ch),
-                                   Downsample(1 * ch),
-                                   ResNetBlock(1 * ch, 2 * ch),
-                                   AttentionBlock(2 * ch),
-                                   ResNetBlock(2 * ch, 2 * ch),
-                                   AttentionBlock(2 * ch),
-                                   Downsample(2 * ch),
-                                   ResNetBlock(2 * ch, 2 * ch),
-                                   ResNetBlock(2 * ch, 2 * ch),
-                                   Downsample(2 * ch),
-                                   ResNetBlock(2 * ch, 2 * ch),
-                                   ResNetBlock(2 * ch, 2 * ch)])
+        self.down = nn.ModuleList([
+            ResNetBlock(ch, 1 * ch),
+            ResNetBlock(1 * ch, 1 * ch),
+            Downsample(1 * ch),
+            ResNetBlock(1 * ch, 2 * ch),
+            AttentionBlock(2 * ch),
+            ResNetBlock(2 * ch, 2 * ch),
+            AttentionBlock(2 * ch),
+            Downsample(2 * ch),
+            ResNetBlock(2 * ch, 2 * ch),
+            ResNetBlock(2 * ch, 2 * ch),
+            Downsample(2 * ch),
+            ResNetBlock(2 * ch, 2 * ch),
+            ResNetBlock(2 * ch, 2 * ch),
+        ])
 
-        self.middle = nn.ModuleList([ResNetBlock(2 * ch, 2 * ch),
-                                     AttentionBlock(2 * ch),
-                                     ResNetBlock(2 * ch, 2 * ch)])
+        self.middle = nn.ModuleList([
+            ResNetBlock(2 * ch, 2 * ch),
+            AttentionBlock(2 * ch),
+            ResNetBlock(2 * ch, 2 * ch),
+        ])
 
-        self.up = nn.ModuleList([ResNetBlock(4 * ch, 2 * ch),
-                                 ResNetBlock(4 * ch, 2 * ch),
-                                 ResNetBlock(4 * ch, 2 * ch),
-                                 Upsample(2 * ch),
-                                 ResNetBlock(4 * ch, 2 * ch),
-                                 ResNetBlock(4 * ch, 2 * ch),
-                                 ResNetBlock(4 * ch, 2 * ch),
-                                 Upsample(2 * ch),
-                                 ResNetBlock(4 * ch, 2 * ch),
-                                 AttentionBlock(2 * ch),
-                                 ResNetBlock(4 * ch, 2 * ch),
-                                 AttentionBlock(2 * ch),
-                                 ResNetBlock(3 * ch, 2 * ch),
-                                 AttentionBlock(2 * ch),
-                                 Upsample(2 * ch),
-                                 ResNetBlock(3 * ch, ch),
-                                 ResNetBlock(2 * ch, ch),
-                                 ResNetBlock(2 * ch, ch)])
+        self.up = nn.ModuleList([
+            ResNetBlock(4 * ch, 2 * ch),
+            ResNetBlock(4 * ch, 2 * ch),
+            ResNetBlock(4 * ch, 2 * ch),
+            Upsample(2 * ch),
+            ResNetBlock(4 * ch, 2 * ch),
+            ResNetBlock(4 * ch, 2 * ch),
+            ResNetBlock(4 * ch, 2 * ch),
+            Upsample(2 * ch),
+            ResNetBlock(4 * ch, 2 * ch),
+            AttentionBlock(2 * ch),
+            ResNetBlock(4 * ch, 2 * ch),
+            AttentionBlock(2 * ch),
+            ResNetBlock(3 * ch, 2 * ch),
+            AttentionBlock(2 * ch),
+            Upsample(2 * ch),
+            ResNetBlock(3 * ch, ch),
+            ResNetBlock(2 * ch, ch),
+            ResNetBlock(2 * ch, ch),
+        ])
 
         self.final_conv = nn.Conv2d(ch, in_ch, 3, stride=1, padding=1)
 
