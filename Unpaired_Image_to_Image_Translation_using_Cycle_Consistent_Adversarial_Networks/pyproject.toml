@@ -1,0 +1,13 @@
+[project]
+dependencies = [
+    "keras>=3.13.0",
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.0",
+    "torch>=2.9.1",
+    "tqdm>=4.67.1",
+]
+description = ""
+name = "Unpaired_Image_to_Image_Translation_using_Cycle_Consistent_Adversarial_Networks"
+readme = "README.md"
+requires-python = ">=3.13"
+version = "0.1.0"
