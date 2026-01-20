@@ -1,0 +1,78 @@
+# A Pyrefly configuration for PyTorch
+# Based on https://github.com/pytorch/pytorch/blob/main/mypy.ini
+project-includes = [
+  "InfoNeRF_Ray_Entropy_Minimization_for_Few_Shot_Neural_Volume_Rendering",
+  "3D_Gaussian_Splatting_for_Real_Time_Radiance_Field_Rendering",
+  "Network_In_Network",
+  "Unpaired_Image_to_Image_Translation_using_Cycle_Consistent_Adversarial_Networks",
+  "Improved_Techniques_for_Training_GANs",
+  "Fourier_Features_Let_Networks_Learn_High_Frequency_Functions_in_Low_Dimensional_Domains",
+  "KiloNeRF_Speeding_up_Neural_Radiance_Fields_with_Thousands_of_Tiny_MLPs",
+  "Adversarial_Feature_Learning",
+  "Generative_Adversarial_Networks",
+  "Self_Normalizing_Neural_Networks",
+  "Denoising_Diffusion_Implicit_Models",
+  "DPM_Solver_A_Fast_ODE_Solver_for_Diffusion_Probabilistic_Model_Sampling_in_Around_10_Steps",
+  "Density_Estimation_Using_Real_NVP",
+  "Image_to_Image_Translation_with_Conditional_Adversarial_Nets",
+  "NeRF_Representing_Scenes_as_Neural_Radiance_Fields_for_View_Synthesis",
+  "Adam_a_Method_For_Stochastic_Optimization",
+  "Conditional_Generative_Adversarial_Nets",
+  "Variational_Inference_with_Normalizing_Flows",
+  "Deep_Image_Prior",
+  "Deep_Reinforcement_Learning_with_Double_Q_learning",
+  "Likelihood_free_MCMC_with_Amortized_Approximate_Ratio_Estimators",
+  "Wasserstein_GAN",
+  "On_the_Variance_of_the_Adaptive_Learning_Rate_and_Beyond",
+  "Speedy_Splat_Fast_3D_Gaussian_Splatting_with_Sparse_Pixels_and_Sparse_Primitives",
+  "Proximal_Policy_Optimization_Algorithms",
+  "KPlanes_Explicit_Radiance_Fields_in_Space_Time_and_Appearance",
+  "Maxout_Networks",
+  "Instant_Neural_Graphics_Primitives_with_a_Multiresolution_Hash_Encoding",
+  "Pseudo_Numerical_Methods_for_Diffusion_Models_on_Manifolds",
+  "FastNeRF_High_Fidelity_Neural_Rendering_at_200FPS",
+  "Plenoxels_Radiance_Fields_without_Neural_Networks",
+  "Auto_Encoding_Variational_Bayes",
+  "Denoising_Diffusion_Probabilistic_Models",
+  "Deep_Unsupervised_Learning_using_Nonequilibrium_Thermodynamics",
+  "Gaussian_Error_Linear_Units_GELUs",
+  "FreeNeRF_Improving_Few_shot_Neural_Rendering_with_Free_Frequency_Regularization",
+  "On_First_Order_Meta_Learning_Algorithms",
+  "Human_level_control_through_deep_reinforcement_learning",
+  "Sequential_Neural_Likelihood",
+  "Improved_Training_of_Wasserstein_GANs",
+  "PlenOctrees_for_Real_time_Rendering_of_Neural_Radiance_Fields",
+  "Fast_and_Accurate_Deep_Network_Learning_by_Exponential_Linear_Units_ELUs",
+  "Learned_Initializations_for_Optimizing_Coordinate_Based_Neural_Representations",
+  "Implicit_Neural_Representations_with_Periodic_Activation_Functions",
+  "Masked_Autoregressive_Flow_for_Density_Estimation",
+  "Neural_Radiance_Fields_Without_Known_Camera_Parameters",
+  "Multiplicative_Filter_Networks",
+  ".github",
+  "Gromov_Wasserstein_Distances_between_Gaussian_Distributions",
+  "NICE_Non_linear_Independent_Components_Estimation",
+  "Model_Agnostic_Meta_Learning_for_Fast_Adaptation_of_Deep_Networks",
+  "Unsupervised_Representation_Learning_with_Deep_Convolutional_Generative_Adversarial_Networks",
+  "Adversarially_Learned_Inference",
+  "Least_Squares_Generative_Adversarial_Networks",
+  "Flow_Straight_and_Fast_Learning_to_Generate_and_Transfer_Data_with_Rectified_Flow",
+  "Optimizing_Millions_of_Hyperparameters_by_Implicit_Differentiation",
+  "Playing_Atari_with_Deep_Reinforcement_Learning",
+]
+python-version = "3.13"
+
+# By default, mypy does not check untyped definitions.
+# However, mypy has a configuration called check_untyped_defs which is used
+# to typecheck the interior of untyped functions.
+untyped-def-behavior = "check-and-infer-return-any"
+# In lots of places they define their attributes in `_init` or similar.
+# https://github.com/pytorch/pytorch/blob/75f3e5a88df60caef27fd9c9df3fd51161378fcc/torch/fx/experimental/symbolic_shapes.py#L3632C1-L3633C1
+errors.implicitly-defined-attribute = false
+# In many methods that are overridden, parameters are renamed.
+# We can come up with a codemod for this in the future
+errors.bad-param-name-override = false
+# Mypy doesn't require that imports are explicitly imported, so be compatible with that.
+# Might be a good idea to turn this on in future.
+errors.deprecated        = false                                                       # re-enable after we've fix import formatting
+errors.implicit-import   = false
+replace-imports-with-any = ["!sympy.printing.*", "sympy.*", "onnxscript.onnx_opset.*"]

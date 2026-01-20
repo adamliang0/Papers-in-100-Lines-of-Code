@@ -1,0 +1,8 @@
+[tools]
+dprint = "latest"
+"pipx:pyrefly" = "latest"
+"pipx:yapf" = "latest"
+tombi = "latest"
+
+[tasks.format]
+run = "rg --files -g '*.py' | xargs yapf --in-place --style=google --parallel --verbose"
